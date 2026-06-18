@@ -16,9 +16,8 @@ metadata:
 
 [MarkItDown](https://github.com/microsoft/markitdown) 是微软开源的轻量级 Python 工具（v0.1.6），用于将各种文件格式转换为 Markdown。专为 LLM 管线和文本分析设计，保留文档结构（标题、列表、表格、链接等）。
 
-**安装位置：** Hermes venv（`/root/.hermes/hermes-agent/.venv`），全局可用
-**CLI 路径：** `markitdown`（venv 已在 PATH 中，直接调用）
-**Python API：** `from markitdown import MarkItDown`（execute_code 中可直接 import）
+**CLI：** 安装后直接使用 `markitdown` 命令
+**Python API：** `from markitdown import MarkItDown`
 
 > **安全提示：** MarkItDown 以当前进程权限执行 I/O，与 `open()` / `requests.get()` 行为一致。处理不受信任来源的文件时，应对输入进行清洗。处理 YouTube URL 需要外部网络访问。处理本地文件需要对目标文件所在目录有读取权限。
 
