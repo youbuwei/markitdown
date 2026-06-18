@@ -38,16 +38,94 @@ metadata:
 | ZIP | `.zip` | 遍历内部文件 |
 | YouTube | URL | 视频字幕转录（需网络） |
 
-## 系统依赖
+## 安装与配置
 
-`markitdown[all]` 通过 PyPI 安装后，大多数格式开箱即用。以下格式需要额外的系统级库：
+### Step 1: 安装 Python 包
+
+MarkItDown 要求 Python ≥ 3.10，安装在当前活跃的 Python 环境中：
+
+```bash
+# 完整安装（含 PDF、Office、OCR、音频转录、YouTube 转录等全部可选依赖）
+pip install 'markitdown[all]' -i https://pypi.org/simple/
+
+# 或仅安装常用格式（PDF + Office 三件套）
+pip install 'markitdown[pdf,docx,pptx,xlsx]' -i https://pypi.org/simple/
+```
+
+**可选依赖速查：**
+
+| 安装选项 | 包含能力 |
+|---------|---------|
+| `[all]` | 全部（推荐） |
+| `[pdf]` | PDF 文本提取 |
+| `[docx]` | Word 文档 |
+| `[pptx]` | PowerPoint |
+| `[xlsx]` | Excel (.xlsx) |
+| `[xls]` | 旧版 Excel (.xls) |
+| `[audio-transcription]` | 音频语音转录 |
+| `[youtube-transcription]` | YouTube 字幕提取 |
+| `[outlook]` | Outlook 邮件 (.msg) |
+
+### Step 2: 验证安装
+
+```bash
+markitdown --version
+# 期望输出: markitdown 0.1.6
+
+python -c "from markitdown import MarkItDown; print(MarkItDown())"
+# 期望输出: <markitdown._markitdown.MarkItDown object at ...>
+```
+
+如果 `markitdown` 命令找不到，确认安装的 Python 环境已加入 PATH，或直接用完整路径：
+
+```bash
+/path/to/venv/bin/markitdown --version
+```
+
+### Step 3: 系统级依赖（可选）
+
+`markitdown[all]` 通过 PyPI 安装后，以下格式开箱即用：PDF、Word、Excel、PPT、HTML、CSV、JSON、XML、EPUB、ZIP、图片（EXIF + OCR）。
+
+以下格式需要额外的系统级库：
 
 | 依赖 | 用途 | 安装方式 |
 |------|------|----------|
 | `flac` | 音频转录（wav/mp3 → 文字） | `apt install flac` |
 | `ffmpeg` | 音视频处理增强 | `apt install ffmpeg` |
 
-无系统依赖也能正常处理：PDF、Word、Excel、PPT、HTML、CSV、JSON、XML、EPUB、ZIP、图片 OCR。
+### Step 4: Azure AI 服务（可选，高级功能）
+
+如需使用 Azure Document Intelligence 或 Content Understanding 进行高质量文档提取：
+
+```bash
+# 安装 Azure 依赖（已包含在 [all] 中）
+pip install 'markitdown[az-doc-intel]' -i https://pypi.org/simple/
+pip install 'markitdown[az-content-understanding]' -i https://pypi.org/simple/
+```
+
+使用时需设置环境变量或通过 CLI 参数传入 endpoint：
+
+```bash
+export AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT="https://your-resource.cognitiveservices.azure.com"
+export AZURE_DOCUMENT_INTELLIGENCE_KEY="your-key"
+
+markitdown document.pdf -d -e "$AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT"
+```
+
+### Step 5: 第三方插件（可选）
+
+MarkItDown 支持社区插件增强功能（如 `markitdown-ocr` 用 LLM 做 OCR）：
+
+```bash
+# 查看已安装插件
+markitdown --list-plugins
+
+# 安装 OCR 插件（需要 LLM API key）
+pip install markitdown-ocr -i https://pypi.org/simple/
+
+# 使用插件转换
+markitdown scanned-doc.pdf -p
+```
 
 ## When to Use
 
@@ -229,14 +307,17 @@ markitdown large-report.pdf 2>/dev/null | head -200
 
 | 错误现象 | 可能原因 | 解决方案 |
 |---------|---------|---------|
-| `ModuleNotFoundError: No module named 'markitdown'` | 未在 Hermes venv 中安装 | `python -m pip install 'markitdown[all]' -i https://pypi.org/simple/` |
+| `ModuleNotFoundError: No module named 'markitdown'` | 未安装或安装在了其他 Python 环境 | 确认 `which python` 和 `pip install` 在同一环境 |
+| `markitdown: command not found` | CLI 不在 PATH 中 | 用 `python -m markitdown` 替代，或用完整路径 `/path/to/venv/bin/markitdown` |
+| `pip install` 报 `externally-managed-environment` | 系统 Python 受 PEP 668 保护 | 使用 venv：`python -m venv .venv && source .venv/bin/activate && pip install ...` |
+| PyPI 镜像源不可用（DNS 解析失败） | 国内镜像偶尔抽风 | 加 `-i https://pypi.org/simple/` 指定官方源 |
+| `python3.11` 版本过低 | markitdown 要求 Python ≥ 3.10 | 升级 Python 到 3.10+ |
 | 音频转写无输出/报错 | 缺少 `flac` 系统命令 | `apt install flac` |
 | YouTube 转录失败 | 网络无法访问 YouTube | 需配置代理或使用其他方式获取字幕 |
 | 图片 OCR 输出空 | 图片质量差或无文字 | 安装 `markitdown-ocr` 插件（需额外配置 LLM） |
 | 中文乱码 | 编码不匹配 | 用 `-c UTF-8` 或 `-c GBK` 指定编码 |
-| `Magika` 模型下载超时 | 首次运行需下载 ONNX 模型 | 重试或设置代理；模型缓存后会持久化 |
-| PDF 提取为空 | 扫描件 PDF（纯图片） | OCR 插件或 `ocr-and-documents` skill |
-| 安装时 PyPI 镜像不可用 | 腾讯云镜像 DNS 解析失败 | 用 `-i https://pypi.org/simple/` 指定官方源 |
+| `Magika` 模型下载超时 | 首次运行需下载 ONNX 模型 (~30MB) | 重试或设置代理；模型缓存后会持久化 |
+| PDF 提取为空 | 扫描件 PDF（纯图片，无文字层） | 用 OCR 插件或 `ocr-and-documents` skill |
 
 ## Common Pitfalls
 
